@@ -2,9 +2,8 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Gold Dashboard</title>
+<title>Gold Realtime 5s</title>
 
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -15,14 +14,12 @@ body {
     color: white;
 }
 
-h2 {
-    margin-top: 20px;
-}
+h2 { margin-top: 20px; }
 
 .price {
-    font-size: 40px;
+    font-size: 36px;
     font-weight: bold;
-    margin: 10px;
+    margin: 8px;
 }
 
 .green { color: #00ff88; }
@@ -31,11 +28,11 @@ h2 {
 #updateTime {
     margin-top: 10px;
     font-size: 14px;
-    color: #ccc;
+    color: #aaa;
 }
 
 canvas {
-    margin-top: 30px;
+    margin-top: 25px;
     max-width: 900px;
 }
 </style>
@@ -43,7 +40,7 @@ canvas {
 
 <body>
 
-<h2>Realtime Gold Dashboard</h2>
+<h2>Gold Realtime (Update every 5s)</h2>
 
 <div id="usd" class="price">USD / oz: Loading...</div>
 <div id="thb" class="price">THB / oz: Loading...</div>
@@ -54,7 +51,7 @@ canvas {
 <canvas id="goldChart"></canvas>
 
 <script>
-let previousTHB = null;
+let previousPrice = null;
 let chart;
 let labels = [];
 let priceData = [];
@@ -75,8 +72,8 @@ async function getGoldPrice() {
         updateDisplay(usdPerOz, thbPerOz, thaiGold);
         updateChart(thbPerOz);
 
-    } catch (error) {
-        console.log(error);
+    } catch (err) {
+        console.log(err);
     }
 }
 
@@ -88,31 +85,31 @@ function updateDisplay(usd, thb, thaiGold) {
     let thbElement = document.getElementById("thb");
     thbElement.innerHTML = "THB / oz: " + thb.toFixed(2);
 
-    // สีเขียวแดง
-    if (previousTHB !== null) {
-        if (thb > previousTHB) {
+    if (previousPrice !== null) {
+        if (thb > previousPrice) {
             thbElement.className = "price green";
-        } else if (thb < previousTHB) {
+        } else if (thb < previousPrice) {
             thbElement.className = "price red";
         }
     }
 
-    previousTHB = thb;
+    previousPrice = thb;
 
     document.getElementById("thaiGold").innerHTML =
         "ทองคำ 1 บาท: " + thaiGold.toFixed(2) + " บาท";
 
     let now = new Date();
     document.getElementById("updateTime").innerHTML =
-        "Last updated: " + now.toLocaleTimeString();
+        "Last update: " + now.toLocaleTimeString();
 }
 
 function updateChart(price) {
+
     let now = new Date();
     labels.push(now.toLocaleTimeString());
     priceData.push(price);
 
-    if (labels.length > 20) {
+    if (labels.length > 100) {
         labels.shift();
         priceData.shift();
     }
@@ -148,7 +145,7 @@ function initChart() {
 
 initChart();
 getGoldPrice();
-setInterval(getGoldPrice, 60000);
+setInterval(getGoldPrice, 5000);
 </script>
 
 </body>
