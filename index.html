@@ -1,43 +1,153 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Realtime Gold Price</title>
+<meta charset="UTF-8">
+<title>Gold Dashboard</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: #111;
+    color: white;
+}
+
+h2 {
+    margin-top: 20px;
+}
+
+.price {
+    font-size: 40px;
+    font-weight: bold;
+    margin: 10px;
+}
+
+.green { color: #00ff88; }
+.red { color: #ff4d4d; }
+
+#updateTime {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #ccc;
+}
+
+canvas {
+    margin-top: 30px;
+    max-width: 900px;
+}
+</style>
 </head>
+
 <body>
 
-<h2>Realtime Gold Price (Thai Baht)</h2>
-<div id="result">Loading...</div>
+<h2>Realtime Gold Dashboard</h2>
+
+<div id="usd" class="price">USD / oz: Loading...</div>
+<div id="thb" class="price">THB / oz: Loading...</div>
+<div id="thaiGold" class="price">ทองคำ 1 บาท: Loading...</div>
+
+<div id="updateTime"></div>
+
+<canvas id="goldChart"></canvas>
 
 <script>
+let previousTHB = null;
+let chart;
+let labels = [];
+let priceData = [];
+
 async function getGoldPrice() {
     try {
-        // ดึงราคาทอง USD ต่อ ounce
         let goldRes = await fetch("https://api.gold-api.com/price/XAU");
         let goldData = await goldRes.json();
         let usdPerOz = goldData.price;
 
-        // ดึงอัตราแลกเปลี่ยน USD -> THB
         let fxRes = await fetch("https://api.frankfurter.app/latest?from=USD&to=THB");
         let fxData = await fxRes.json();
         let usdthb = fxData.rates.THB;
 
-        // คำนวณทองคำ 1 บาท (96.5%)
+        let thbPerOz = usdPerOz * usdthb;
         let thaiGold = (usdPerOz * usdthb * 15.244 * 0.965) / 31.1035;
 
-        document.getElementById("result").innerHTML =
-            "ทองคำ 1 บาท ≈ " + thaiGold.toFixed(2) + " บาท";
+        updateDisplay(usdPerOz, thbPerOz, thaiGold);
+        updateChart(thbPerOz);
 
     } catch (error) {
-        document.getElementById("result").innerHTML = "Error loading data";
         console.log(error);
     }
 }
 
-// เรียกใช้งานครั้งแรก
-getGoldPrice();
+function updateDisplay(usd, thb, thaiGold) {
 
-// รีเฟรชทุก 60 วินาที
+    document.getElementById("usd").innerHTML =
+        "USD / oz: " + usd.toFixed(2);
+
+    let thbElement = document.getElementById("thb");
+    thbElement.innerHTML = "THB / oz: " + thb.toFixed(2);
+
+    // สีเขียวแดง
+    if (previousTHB !== null) {
+        if (thb > previousTHB) {
+            thbElement.className = "price green";
+        } else if (thb < previousTHB) {
+            thbElement.className = "price red";
+        }
+    }
+
+    previousTHB = thb;
+
+    document.getElementById("thaiGold").innerHTML =
+        "ทองคำ 1 บาท: " + thaiGold.toFixed(2) + " บาท";
+
+    let now = new Date();
+    document.getElementById("updateTime").innerHTML =
+        "Last updated: " + now.toLocaleTimeString();
+}
+
+function updateChart(price) {
+    let now = new Date();
+    labels.push(now.toLocaleTimeString());
+    priceData.push(price);
+
+    if (labels.length > 20) {
+        labels.shift();
+        priceData.shift();
+    }
+
+    chart.update();
+}
+
+function initChart() {
+    const ctx = document.getElementById("goldChart").getContext("2d");
+    chart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "THB / oz",
+                data: priceData,
+                borderWidth: 2,
+                tension: 0.2
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { ticks: { color: "white" } },
+                y: { ticks: { color: "white" } }
+            },
+            plugins: {
+                legend: { labels: { color: "white" } }
+            }
+        }
+    });
+}
+
+initChart();
+getGoldPrice();
 setInterval(getGoldPrice, 60000);
 </script>
 
