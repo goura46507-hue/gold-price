@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Realtime Gold Price</title>
+</head>
+<body>
+
+<h2>Realtime Gold Price (Thai Baht)</h2>
+<div id="result">Loading...</div>
+
+<script>
+async function getGoldPrice() {
+    try {
+        // ดึงราคาทอง USD ต่อ ounce
+        let goldRes = await fetch("https://api.gold-api.com/price/XAU");
+        let goldData = await goldRes.json();
+        let usdPerOz = goldData.price;
+
+        // ดึงอัตราแลกเปลี่ยน USD -> THB
+        let fxRes = await fetch("https://api.frankfurter.app/latest?from=USD&to=THB");
+        let fxData = await fxRes.json();
+        let usdthb = fxData.rates.THB;
+
+        // คำนวณทองคำ 1 บาท (96.5%)
+        let thaiGold = (usdPerOz * usdthb * 15.244 * 0.965) / 31.1035;
+
+        document.getElementById("result").innerHTML =
+            "ทองคำ 1 บาท ≈ " + thaiGold.toFixed(2) + " บาท";
+
+    } catch (error) {
+        document.getElementById("result").innerHTML = "Error loading data";
+        console.log(error);
+    }
+}
+
+// เรียกใช้งานครั้งแรก
+getGoldPrice();
+
+// รีเฟรชทุก 60 วินาที
+setInterval(getGoldPrice, 60000);
+</script>
+
+</body>
+</html>
